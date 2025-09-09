@@ -1036,7 +1036,7 @@ class TestLocallyBuiltContainerCommands(BaseCommandsTest):
         )
 
         run_command = list_to_str(
-            ["docker", "run", "--quiet", "-e", "RUNO_CONTAINER_NAME=test_docker_file"]
+            ["docker", "run", "-e", "RUNO_CONTAINER_NAME=test_docker_file"]
             + _expected_docker_run_options(docker_run_options_str)
             + [helpers["expected_tag"]]
             + [self._generate_command_to_run(command, run_options)]
@@ -1132,7 +1132,7 @@ class TestContainerFromImageCommands(BaseCommandsTest):
         container_config = env_specific_data["config_overrides"]["docker_containers"][0]
 
         run_command = list_to_str(
-            ["docker", "run", "--quiet", "-e", "RUNO_CONTAINER_NAME=test_image_from_repo"]
+            ["docker", "run", "-e", "RUNO_CONTAINER_NAME=test_image_from_repo"]
             + _expected_docker_run_options(docker_run_options_str)
             + [container_config["docker_image"]]
             + [self._generate_command_to_run(command, run_options)]
@@ -1309,7 +1309,6 @@ class TestContainersSelection:
             [
                 "docker",
                 "run",
-                "--quiet",
                 "-e",
                 f"RUNO_CONTAINER_NAME={container_name}",
                 "--user",

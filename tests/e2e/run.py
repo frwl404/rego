@@ -64,6 +64,7 @@ def main():
 
     print(f"SUMMARY: {passed_cnt} PASSED, {failed_cnt} FAILED")
     if failed_cnt > 0:
+        print(f"Failure map: {failed}")
         return 1
 
     return 0
