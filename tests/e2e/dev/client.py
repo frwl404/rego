@@ -24,7 +24,7 @@ if __name__ == "__main__":
         print("Ping NOK")
 
     if rc == 0:
-        print("All tests passed")
+        print("Server is alive")
 
     sys.exit(rc)
 

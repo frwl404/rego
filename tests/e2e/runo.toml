@@ -57,7 +57,7 @@ execute = "dev/say.sh"
 name = "example_docker_compose_simple"
 description = "example of command, exicuting simple command from docker compose service"
 docker_container = "container_defined_by_docker_compose"
-docker_run_options = "--build -i"
+docker_run_options = "--quiet --build -i"
 execute = "echo PASSED"
 # e2e_tests = ["example_docker_compose_simple|PASSED\n|0"]
 
@@ -65,9 +65,9 @@ execute = "echo PASSED"
 name = "example_docker_compose_test_client"
 description = "example of command, which depends on docker compose service"
 docker_container = "container_defined_by_docker_compose"
-docker_run_options = "--build -i"
+docker_run_options = "--quiet --build -i"
 execute = "./dev/client.py"
-# e2e_tests = ["example_docker_compose_test_client|All tests passed\n|0"]
+# e2e_tests = ["example_docker_compose_test_client|Server is alive\n|0"]
 
 [[docker_containers]]
 name = "container_defined_by_docker_file"
