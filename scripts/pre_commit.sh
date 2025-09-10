@@ -4,9 +4,6 @@ cd "$(dirname "$0")/../"
 
 source /tmp/runo_venv/.venv/bin/activate
 
-echo ">>> setting actual version ($(git describe --tags))"
-sed -i "s/^__version__ = .*/__version__ = \"$(git describe --tags)\"/" ./runo
-
 echo ">>> formatting the code with ruff"
 ruff format ./runo tests
 
@@ -15,3 +12,9 @@ ruff check ./runo tests --fix
 
 echo ">>> mypy is checking the code"
 mypy ./runo tests
+
+echo ">>> set and actual version"
+# Remove __version__ line and compute checksum of the file
+version="$(scripts/version.sh)"
+sed -i "s/^__version__ = .*/__version__ = \"$version\"/" ./runo
+

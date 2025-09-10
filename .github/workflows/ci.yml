@@ -25,19 +25,19 @@ jobs:
       # Formatter
       - name: ruff (formatter)
         run: ./runo ruff format runo tests --check
-#      # Check that version was set correctly
-#      - name: version checker
-#        run: |
-#          expected="runo version: $(git describe --tags)"
-#          actual="$(./runo -v)"
-#
-#          if [ "$actual" = "$expected" ]; then
-#            echo "OK"
-#          else
-#            echo "Version doesn't match expected ($expected)."
-#            echo "Make sure you run './runo pre-commit'"
-#            exit 1
-#          fi
+      # Check that version was set correctly
+      - name: version checker
+        run: |
+          expected="runo version: $(./scripts/version.sh)"
+          actual="$(./runo -v)"
+
+          if [ "$actual" = "$expected" ]; then
+            echo "OK"
+          else
+            echo "Versions doesn't match expected: ($expected), actual: ($actual)"
+            echo "Make sure you run './runo pre-commit'"
+            exit 1
+          fi
 
   python36:
     runs-on: ubuntu-latest

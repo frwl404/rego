@@ -83,7 +83,7 @@ class TestArguments:
 
         std_out, std_err = capfd.readouterr()
         assert std_err == ""
-        assert re.fullmatch(r"runo version: \d+\.\d+\.\d+\n", std_out)
+        assert re.fullmatch(r"runo version: \d{2}\.\d{2}\.\d{2}-[a-f0-9]{8}\n", std_out)
 
     @pytest.mark.parametrize(
         "config_content, expected_output",
