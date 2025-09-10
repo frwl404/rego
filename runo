@@ -30,7 +30,7 @@ from typing import (
     Union,
 )
 
-__version__ = "0.0.2"
+__version__ = "25.09.16-21b92714"
 
 # We use .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
