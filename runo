@@ -30,7 +30,7 @@ from typing import (
     Union,
 )
 
-__version__ = "25.09.16-1a0afa7b"
+__version__ = "25.09.16-d48f7ef2"
 
 # We use .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
@@ -61,11 +61,9 @@ except ModuleNotFoundError:
             tomllib = _SimplifiedTomlParser()
 
 
-TOOL_NAME = os.path.basename(__file__)
-TOOL_RELATIVE_PATH = f"./{TOOL_NAME}"
-TOOL_ABS_PATH = f"{os.path.abspath(__file__)}"
-TOOL_DIR = os.path.dirname(TOOL_ABS_PATH).lstrip("/")
-REPO_NAME = TOOL_DIR
+TOOL_ABS_PATH = Path(f"{os.path.abspath(__file__)}")
+TOOL_RELATIVE_PATH = f"./{TOOL_ABS_PATH.name}"
+REPO_NAME = TOOL_ABS_PATH.parent.name.lstrip("/")
 
 DEFAULT_CFG_PATH = f"{TOOL_RELATIVE_PATH}.toml"
 
