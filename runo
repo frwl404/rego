@@ -2,13 +2,12 @@
 
 
 """
-runo is a single-file tool, which is aimed to simplify/unify/speedup
+runo is a repository assistant aimed to simplify/unify/speedup
 development workflow for any repository/project.
 It is not important for runo if your project is written
 in Python/Go/Rust/C++/Java or something else, runo can
 work with any project in the same way.
 
-Author: anton.chivkunov@gmail.com
 Official repo: https://github.com/frwl404/runo
 """
 
@@ -30,15 +29,15 @@ from typing import (
     Union,
 )
 
-__version__ = "25.09.16-d48f7ef2"
+__version__ = "25.09.16-ca31d0e6"
 
-# We use .toml format of config files, but parsers for this format
+# runo uses .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
 # was included into Python itself). Since we are not going to have any
 # requirements from target systems (apart from Python itself),
-# we will try import few well-known libs in hope that target system
-# have something installed. In case if nothing found, we will try to
-# use our-own implementation (quite limited in functionality however).
+# runo will try import few well-known libs in hope that target system
+# have something installed. In case if nothing found, it will try to
+# use in-house implementation (quite limited in functionality however).
 try:
     # Starting from Python 3.11 it is available together with Python.
     import tomllib
@@ -52,8 +51,8 @@ except ModuleNotFoundError:
             # Small chance that target system has tomli installed directly
             import tomli as tomllib
         except ModuleNotFoundError:
-            # And only if nothing at all is available, we will try to use
-            # our own, very simplified parser, which has a lot of restrictions
+            # And only if nothing at all is available, runo will try to use
+            # in-house, very simplified parser, which has a lot of restrictions
             class _SimplifiedTomlParser:
                 def load(self, file):
                     return TomlParser().load(file)
