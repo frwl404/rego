@@ -1,4 +1,4 @@
-# Single-file tool that greatly simplifies the development workflow for any repository.
+# Single-file repo assistant that greatly simplifies the development workflow for any repository.
 
 [![CI](https://github.com/frwl404/dev-it-easy/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/frwl404/dev-it-easy/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/frwl404/runo/branch/master/graph/badge.svg)](https://app.codecov.io/gh/frwl404/runo)
@@ -27,11 +27,12 @@ be done and **how** to do it. With `runo`, just run:
 ```
 > ./runo
 Following commands are available:
-  * test - runs unit tests (pytest) ['./runo tests --cov -vv', './runo tests --last-failed']
-  * build - builds the project ['./runo build']
-  * shell - debug container by running shell in interactive mode (keep container running) ['./runo shell']
-  * pre-commit - quick checks/fixes of code formatting (ruff/mypy) ['./runo pre-commit']
-  * update-deps - updates dependencies, used in project, to the latest versions ['./runo update-deps']
+  * sandbox - runs server (API + UI) and DB locally
+  * test - runs unit tests (pytest) ['./runo test --cov -vv', './runo test --last-failed']
+  * build - builds the project
+  * pre-commit - quick checks/fixes of code formatting (ruff/mypy)
+  * update-deps - updates dependencies, used in project, to the latest versions
+  * shell - debug container by running shell in interactive mode (keep container running)
 ```
 
 You immediately see **WHAT** can be done in this repo and **HOW** it can be done.  
