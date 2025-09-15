@@ -163,7 +163,7 @@ class TestArguments:
             std_out
             == """Following commands are available:
   * test - run tests ['./runo.py test --pdb']
-  * build - build the project ['./runo.py build']
+  * build - build the project
 """
         )
 
