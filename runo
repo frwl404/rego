@@ -29,7 +29,7 @@ from typing import (
     Union,
 )
 
-__version__ = "25.09.16-ca31d0e6"
+__version__ = "25.09.16-5517b2d8"
 
 # runo uses .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
@@ -897,18 +897,18 @@ def _validate_containers(
 ##################################################################################
 
 
-def _examples_representation(cmd: dict) -> List[str]:
+def _examples_representation(cmd: dict) -> str:
     examples = cmd.get("examples")
     if not examples:
-        return [f"{TOOL_RELATIVE_PATH} {cmd['name']}"]
-    return [f"{TOOL_RELATIVE_PATH} {example}" for example in examples]
+        return ""
+    return " " + str([f"{TOOL_RELATIVE_PATH} {example}" for example in examples])
 
 
 def _show_main_menu_and_exit(cfg: dict):
     validated, errors = _validate_commands(cfg.get("commands", []))
 
     commands = [
-        f"  * {command['name']} - {command['description']} {_examples_representation(command)}"
+        f"  * {command['name']} - {command['description']}{_examples_representation(command)}"
         for command in validated
     ]
 
