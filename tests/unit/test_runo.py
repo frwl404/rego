@@ -1233,7 +1233,7 @@ class TestDockerComposeServiceCommands(BaseCommandsTest):
                 "docker",
                 "compose",
                 *expected_docker_compose_options,
-                "run --build",
+                "run --build --service-ports",
             ]
             + _expected_docker_run_options(docker_run_options_str)
             + [container_config["docker_compose_service"]]
