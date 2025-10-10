@@ -29,7 +29,7 @@ from typing import (
     Union,
 )
 
-__version__ = "25.10.10-816388d0"
+__version__ = "25.10.10-e879d7bf"
 
 # runo uses .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
@@ -364,7 +364,7 @@ class Composition:
             [self.compose_base]
             + self._generated_options
             + self._compose_options_from_config
-            + ["run"]
+            + ["run --build"]
             + docker_run_options
             + [self._cfg["docker_compose_service"]]
             + [command_to_run]
