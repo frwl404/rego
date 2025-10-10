@@ -1232,8 +1232,6 @@ class TestDockerComposeServiceCommands(BaseCommandsTest):
             [
                 "docker",
                 "compose",
-                "--progress",
-                "quiet",
                 *expected_docker_compose_options,
                 "run",
             ]

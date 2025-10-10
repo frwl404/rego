@@ -29,7 +29,7 @@ from typing import (
     Union,
 )
 
-__version__ = "25.09.16-5517b2d8"
+__version__ = "25.10.10-816388d0"
 
 # runo uses .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
@@ -348,11 +348,6 @@ class Composition:
 
     def prepare(self):
         option_to_value = _option_to_value(self._compose_options_from_config)
-
-        progress_option = _get_value_from_options(option_to_value, {"--progress"})
-        if not progress_option:
-            # We do want to be quite by default.
-            self._generated_options.extend(["--progress", "quiet"])
 
         # We must support overriding of file name, at least because docker compose
         # has multiple files support and users may want to use something like:
