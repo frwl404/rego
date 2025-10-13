@@ -99,6 +99,13 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  python314:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: unit test
+        run: ./runo -c python314 test
+
   end-to-end-tests:
     runs-on: ubuntu-latest
     steps:
