@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/frwl404/dev-it-easy/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/frwl404/dev-it-easy/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/frwl404/runo/branch/master/graph/badge.svg)](https://app.codecov.io/gh/frwl404/runo)
-![Static Badge](https://img.shields.io/badge/supported_python-from_3.6_to_3.13-limegreen)
+![Static Badge](https://img.shields.io/badge/supported_python-from_3.6_to_3.14-limegreen)
 
 ## 🔍 Problem: nowadays, every repo has its own development workflow
 When switching to a new repository, one of the first questions would be: 

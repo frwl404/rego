@@ -85,3 +85,7 @@ docker_file_path = "containers/python312/Dockerfile"
 [[docker_containers]]
 name = "python313"
 docker_file_path = "containers/python313/Dockerfile"
+
+[[docker_containers]]
+name = "python314"
+docker_file_path = "containers/python314/Dockerfile"
