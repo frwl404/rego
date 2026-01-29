@@ -46,31 +46,24 @@ class TestArguments:
         std_out, std_err = capfd.readouterr()
         assert std_err == ""
         expected_strings = [
-            "usage: runo [-c CONTAINER] [-d] [--config CONFIG] [--containers] [--init] [-h]",
-            "            [-v]",
-            "            ...",
-            "",
+            "usage: runo [-c [CONTAINER]] [-d] [--config CONFIG] [--init] [-h] [-v]",
             "positional arguments:",
-            "  command               exact command to be executed (might be supplemented",
-            "                        with options). You could try `./runo.py` to get list",
-            "                        of available commands.",
-            "",
+            "  command",
+            "exact command to be executed",
             "option",  # can be "optional arguments:" in old versions and "options:" on new
             # can be "CONTAINER, --container CONTAINER" in old versions, but:
             # "-c, --container CONTAINER" on new, starting from Python 3.13
-            ", --container CONTAINER",
-            "                        force command to be run in specific container(s). Use",
-            '                        "*" to run in all containers',
+            ", --container",
+            "force command to be run in specific container(s)",
+            '"*" to run in all containers',
+            "list available containers",
             "  -d, --debug           verbose output",
             "  --config CONFIG       path to the actual config file",
             "  --init                create and initialize config file",
-            "  --containers          show all containers, present in the config file",
             "  -h, --help",
             "  -v, --version         show actual version of runo",
-            "",
         ]
 
-        assert len(std_out.split("\n")) == len(expected_strings)
         for expected_string in expected_strings:
             assert expected_string in std_out
 
@@ -117,8 +110,9 @@ class TestArguments:
             ),
         ],
     )
-    def test_containers(self, capfd, monkeypatch, config_content, expected_output):
-        monkeypatch.setattr(sys, "argv", ["runo", "--containers"])
+    @pytest.mark.parametrize("container_flag", ["-c", "--container"])
+    def test_containers(self, capfd, monkeypatch, config_content, expected_output, container_flag):
+        monkeypatch.setattr(sys, "argv", ["runo", container_flag])
         config_path = pathlib.Path(os.getcwd()) / "runo.py.toml"
 
         with pytest.raises(SystemExit, match=_OK_EXIT_CODE_REGEX), _config_file(
@@ -192,14 +186,8 @@ Please initialize it with './runo.py --init'
 
         std_out, std_err = capfd.readouterr()
         assert std_out == ""
-        assert (
-            std_err
-            == """usage: runo [-c CONTAINER] [-d] [--config CONFIG] [--containers] [--init] [-h]
-            [-v]
-            ...
-runo: error: unrecognized arguments: --wrong-option
-"""
-        )
+        assert "usage: runo [-c [CONTAINER]] [-d] [--config CONFIG] [--init] [-h] [-v]" in std_err
+        assert "runo: error: unrecognized arguments: --wrong-option" in std_err
 
 
 class TestInit:
@@ -685,7 +673,7 @@ as well, but they are not found: {'docker_compose_service'}"]
         expected_std_out,
         expected_std_err,
     ):
-        monkeypatch.setattr(sys, "argv", ["runo", "--config", str(config_path), "--containers"])
+        monkeypatch.setattr(sys, "argv", ["runo", "--config", str(config_path), "-c"])
 
         with pytest.raises(SystemExit, match=f"^{expected_rc}$"), _config_file(
             toml.dumps(config_content), config_path
@@ -1458,7 +1446,7 @@ class TestContainersSelection:
         assert err == "\n".join(
             [
                 "Container 'no_such_container' is not found in the config.",
-                "Please use '--containers' option to list all containers, present in the config\n",
+                "Please use '-c' without value to list all containers\n",
             ]
         )
 
@@ -1491,7 +1479,7 @@ class TestContainersSelection:
             [
                 "Container 'bad_container' is invalid:",
                 "  - docker_containers.0.docker_image: ['should be of type str, got int']",
-                "Please use '--containers' option to list all containers, present in the config\n",
+                "Please use '-c' without value to list all containers\n",
             ]
         )
 

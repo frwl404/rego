@@ -120,7 +120,8 @@ Please note that these command are executed on host machine (not inside containe
 
 Name of the container (defined in the same config), which should be used 
 by the command by default. It can be overwritten via CLI at moment of run 
-with help of `-c`/`--container` option.
+with help of `-c`/`--container` option. You can also use `-c` without a value
+to list all available containers configured in the config file.
 
 #### `docker_run_options` (`string`)
 

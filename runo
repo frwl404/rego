@@ -29,7 +29,7 @@ from typing import (
     Union,
 )
 
-__version__ = "26.01.29-d1b27d75"
+__version__ = "26.01.29-27d75720"
 
 # runo uses .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
@@ -573,9 +573,7 @@ def _get_container_config(target_container_name: str, cfg: dict) -> dict:
                 output.append(f"  - {e}")
         else:
             output = [f"Container '{target_container_name}' is not found in the config."]
-        output.append(
-            "Please use '--containers' option to list all containers, present in the config"
-        )
+        output.append("Please use '-c' without value to list all containers")
         _logger.error(output)
         sys.exit(os.EX_CONFIG)
 
@@ -956,8 +954,10 @@ def _parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-c",
         "--container",
+        nargs="?",
         action="append",
-        help='force command to be run in specific container(s). Use "*" to run in all containers',
+        help="force command to be run in specific container(s). "
+        'Use "*" to run in all containers. Use without value to list available containers',
     )
     parser.add_argument(
         "-d",
@@ -968,11 +968,6 @@ def _parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--config",
         help="path to the actual config file",
-    )
-    parser.add_argument(
-        "--containers",
-        action="store_true",
-        help="show all containers, present in the config file",
     )
     parser.add_argument(
         "--init",
@@ -1013,7 +1008,7 @@ def main():
             _init_config_and_exit(config_path)
 
         cfg: dict = _read_config(config_path)
-        if args.containers:
+        if args.container is not None and None in args.container:
             _show_configured_containers_and_exit(cfg)
 
         if not args.command:
