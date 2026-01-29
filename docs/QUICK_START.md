@@ -16,7 +16,7 @@ on any development machine by default nowadays:
 
 Go to root of your repository and do one of two things:
 <details>
-<summary>Just copy file directly to you repo (and make it executable)</summary>
+<summary>Just copy file directly to your repo (and make it executable)</summary>
 
 ```
 wget https://raw.githubusercontent.com/frwl404/runo/refs/heads/master/runo &&\
@@ -63,9 +63,9 @@ Following commands are available:
   * pre-commit - quick checks/fixes of code formatting (ruff/mypy) ['./runo pre-commit']
   * update-deps - updates dependencies, used in project, to the latest versions ['./runo update-deps']
 ```
-At this moment most part of them are just a mocks, which prints something to console,
+At this moment most of them are just mocks, which print something to console,
 because at this moment `./runo` doesn't know what `test`/`build`/`...` means for your project.
-Only `./runo shell` do exactly what you expect from it (because it is quite universal thing, which means the same in any repo/project).
+Only `./runo shell` does exactly what you expect from it (because it is quite universal thing, which means the same in any repo/project).
 
 ## 3. Adopt generated config for your needs.
 

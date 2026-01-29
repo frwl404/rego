@@ -12,6 +12,7 @@ Official repo: https://github.com/frwl404/runo
 """
 
 import argparse
+import json
 import os
 import os.path
 import subprocess
@@ -29,7 +30,7 @@ from typing import (
     Union,
 )
 
-__version__ = "26.01.29-27d75720"
+__version__ = "26.01.29-716a0e17"
 
 # runo uses .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
@@ -69,10 +70,10 @@ DEFAULT_CFG_PATH = f"{TOOL_RELATIVE_PATH}.toml"
 
 INITIAL_CONFIG_CONTENT = """
 # This is auto-generated file, which contains recommended set of commands and examples.
-# To make it working for you project, please update configuration.
-# For real-word examples, please check https://github.com/frwl404/runo
+# To make it working for your project, please update configuration.
+# For real-world examples, please check https://github.com/frwl404/runo
 # You can find all details, needed for updating it to your needs in:
-# https://github.com/frwl404/runo/blob/main/docs/CONFIG
+# https://github.com/frwl404/runo/blob/main/docs/CONFIG.md
 
 #######################################################
 # Examples of commands
@@ -82,17 +83,17 @@ name = "test"
 description = "runs unit tests"
 # OPTIONALLY, you can specify actions, which you want to perform before the main command.
 # For python projects, you may want to activate venv here.
-before = ["echo This is just an exampe", "echo You should configure your tests here"]
+before = ["echo This is just an example", "echo You should configure your tests here"]
 # Actual command to run (can be single command, or script).
 # You can pass additional options to this executable via console (see 'examples' section)
 execute = "echo ALL TESTS PASSED"
-# OPTIONALLY, you can specify actions, which you want to perfrom after the main command
+# OPTIONALLY, you can specify actions, which you want to perform after the main command
 # to do cleanup
-after =["echo done > /dev/null"]
+after = ["echo done > /dev/null"]
 # OPTIONALLY, you can specify examples of command usage.
 # if missing, ./runo will auto generate single example.
 examples = ["tests --cov -vv", "tests --last-failed"]
-## OPTIONALLY you can specify container, in which command should be executed by defaut.
+## OPTIONALLY you can specify container, in which command should be executed by default.
 ## Container must be defined in the same file.
 ## It can be overwritten, or set from CLI as well.
 # docker_container = "alpine"
@@ -103,7 +104,7 @@ examples = ["tests --cov -vv", "tests --last-failed"]
 [[commands]]
 name = "build"
 description = "builds the project"
-execute = "echo Buld is running"
+execute = "echo Build is running"
 after = ["echo done"]
 #docker_container = "alpine"
 #docker_run_options = "-it -v .:/app -w /app"
@@ -119,7 +120,7 @@ docker_run_options = "-it -v .:/app -w /app"
 name = "pre-commit"
 description = "quick checks/fixes of code formatting (ruff/mypy)"
 execute = "echo Ruff is formatting the code"
-after = ["echo Formating completed"]
+after = ["echo Formatting completed"]
 #execute = "scripts/pre_commit.sh"
 #docker_container = "alpine"
 #docker_run_options = "-v .:/app -w /app"
@@ -196,16 +197,38 @@ class Logger:
         self._print_message(message, file=sys.stderr)
 
 
+# Global logger instance, initialized by main() before any usage.
+# Intentionally not initialized at module level to ensure fresh state
+# (e.g., debug flag) for each main() call. All code paths that use _logger
+# are only reachable after main() has initialized it.
 _logger: Logger
 
 
 def _subprocess_run(cmd: str, **kwargs) -> subprocess.CompletedProcess:
+    """
+    Execute a shell command with full shell expansion support.
+
+    SECURITY NOTE (INTENTIONAL DESIGN):
+    This function deliberately uses shell=True to enable shell features that are
+    essential for runo's use cases:
+
+    1. Environment variable substitution: Commands like "-u $(id -u):$(id -g)" need
+       shell expansion to resolve user/group IDs dynamically.
+
+    2. Shell operators: Users may need pipes, redirects, and command chaining in
+       their 'execute', 'before', and 'after' configuration directives.
+
+    3. Glob expansion: File patterns in commands should expand naturally.
+
+    The security model assumes that:
+    - The runo.toml configuration file is trusted (maintained by repository owners).
+    - CLI arguments passed to commands are under the user's control.
+    - runo is run by the same user who controls the configuration.
+
+    This is consistent with tools like Make, npm scripts, and shell aliases, which
+    also execute user-defined commands with full shell capabilities.
+    """
     _logger.debug(f"running: {cmd}")
-    # We use 'shell=True', because want to support configurations,
-    # where client will want to provide environment variable to some arguments.
-    # For example, in case if we will have the following docker run options:
-    # "-u $(id -u):$(id -g)", we want substitution of env variables to happen
-    # automatically.
     return subprocess.run(cmd, shell=True, **kwargs)
 
 
@@ -272,22 +295,30 @@ def drop_interactive_if_not_tty(docker_run_options: List[str]) -> List[str]:
     if sys.stdin.isatty():
         return docker_run_options
 
-    for f in ("--interactive", "-i"):
-        if f in docker_run_options:
-            _str = " ".join(docker_run_options)
-            _logger.debug(f"the input device is not TTY, dropping '{f}' from '{_str}'")
-            docker_run_options.remove(f)
+    result: List[str] = []
+    original_str = " ".join(docker_run_options)
 
-    for idx, value in enumerate(docker_run_options):
+    for value in docker_run_options:
+        if value in ("--interactive", "-i"):
+            _logger.debug(f"the input device is not TTY, dropping '{value}' from '{original_str}'")
+            continue
+
+        # Handle combined short flags like "-it" -> "-t"
         if value.startswith("-") and not value.startswith("--") and "i" in value:
+            new_value = value.replace("i", "")
             _logger.debug(f"the input device is not TTY, dropping 'i' from '{value}'")
-            docker_run_options[idx] = value.replace("i", "")
+            # Only add if there's something left after removing 'i' (e.g., "-it" -> "-t")
+            if new_value != "-":
+                result.append(new_value)
+            continue
 
-    return docker_run_options
+        result.append(value)
+
+    return result
 
 
 class Image:
-    def __init__(self, container_cfg: dict):
+    def __init__(self, container_cfg: Dict[str, Any]):
         self._cfg = container_cfg
         self._img_tag: str = ""
 
@@ -332,13 +363,20 @@ class Image:
         return _subprocess_run(" ".join(full_docker_command))
 
     def cleanup(self):
+        """
+        Clean up resources after command execution.
+
+        For standalone images, this is a no-op since `docker run --rm` already
+        removes the container automatically. This method exists to satisfy the
+        docker backend interface shared with Composition, which requires cleanup.
+        """
         pass
 
 
 class Composition:
     compose_base = "docker compose"
 
-    def __init__(self, container_cfg: dict):
+    def __init__(self, container_cfg: Dict[str, Any]):
         self._cfg = container_cfg
         self._compose_file: str = ""
         self._generated_options: List[str] = []
@@ -375,17 +413,19 @@ class Composition:
         # Clean up after ourselves. It should be completely silent,
         # this is the reason why we redirect stdout and stderr to /dev/null
         _subprocess_run(
-            f"{self.compose_base} down --remove-orphans",
+            f"{self.compose_base} --file {self._compose_file} down --remove-orphans",
             stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         _subprocess_run(
             f"{self.compose_base} --file {self._compose_file} rm -fsv",
             stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
 
 
 class Container:
-    def __init__(self, container_cfg: dict):
+    def __init__(self, container_cfg: Dict[str, Any]):
         self._docker_backend: Union[Composition, Image] = (
             Composition(container_cfg)
             if "docker_compose_service" in container_cfg
@@ -413,7 +453,7 @@ def _string_as_list(shell_cmd: Optional[str]) -> List[str]:
     return shell_cmd.split()
 
 
-def _determine_config_path(path_from_user: Optional[str], for_write: bool = False):
+def _determine_config_path(path_from_user: Optional[str], for_write: bool = False) -> Path:
     if path_from_user:
         if for_write:
             # When user asks to write config (--init) under some non-default path,
@@ -453,8 +493,6 @@ class TomlParser:
     some restrictions (multiline lists, or something else might be not supported).
     Hope this parser will not get into the game too often.
     """
-
-    import json
 
     def load(self, file):
         result: dict = {}
@@ -507,7 +545,7 @@ class TomlParser:
             # after last element of the list, but this is invalid json.
             # Since this parser is very-very simple, we just will try
             # to drop that comma.
-            value = self.json.loads(value.replace(",]", "]"))
+            value = json.loads(value.replace(",]", "]"))
 
             if not current_section_name:
                 # This is for root-level settings (not sections)
@@ -520,10 +558,10 @@ class TomlParser:
         return result
 
 
-def _init_config_and_exit(config_path: Path):
+def _init_config_and_exit(config_path: Path) -> None:
     if os.path.isfile(config_path):
         _logger.error(
-            f"file '{config_path}' already exist.\n"
+            f"file '{config_path}' already exists.\n"
             "Please review that file. If it is needed, you can either:\n"
             "- keep it on the same place, and generate new config "
             "under different path/name (use '--config')\n"
@@ -580,7 +618,7 @@ def _get_container_config(target_container_name: str, cfg: dict) -> dict:
     return valid_containers[0]
 
 
-def _generate_bin_sh_cmd(commands: List[str]):
+def _generate_bin_sh_cmd(commands: List[str]) -> str:
     return f"/bin/sh -c '{' && '.join(commands)}'"
 
 
@@ -665,7 +703,7 @@ def _run_command(
         ]
         + [f"  - {name} has returned {rc}" for name, rc in nok_containers.items()]
     )
-    return -1
+    return os.EX_SOFTWARE
 
 
 ##################################################################################
@@ -769,7 +807,7 @@ class Validator:
         return {}
 
 
-def _validate_name(name: str):
+def _validate_name(name: str) -> Optional[str]:
     _name = name
     _name = _name.replace("-", "")
     _name = _name.replace("_", "")
@@ -836,7 +874,6 @@ _container_validator = Validator(
         "docker_file_path",
         "docker_image",
         "docker_compose_file_path",
-        "docker_compose_options",
     },
 )
 
@@ -897,7 +934,7 @@ def _examples_representation(cmd: dict) -> str:
     return " " + str([f"{TOOL_RELATIVE_PATH} {example}" for example in examples])
 
 
-def _show_main_menu_and_exit(cfg: dict):
+def _show_main_menu_and_exit(cfg: dict) -> None:
     validated, errors = _validate_commands(cfg.get("commands", []))
 
     commands = [
@@ -909,7 +946,7 @@ def _show_main_menu_and_exit(cfg: dict):
         _logger.info(["Following commands are available:"] + commands)
     else:
         _logger.info(
-            ["Config file is present, but there are no any valid commands configured there"]
+            ["Config file is present, but there aren't any valid commands configured there"]
         )
 
     if errors:
@@ -930,7 +967,7 @@ def _show_configured_containers_and_exit(cfg: dict):
     if containers:
         _logger.info(["Following containers are available:"] + containers)
     else:
-        _logger.info(["No any valid container configuration found"])
+        _logger.info(["No valid container configuration found"])
 
     if errors:
         _logger.error(
@@ -943,7 +980,7 @@ def _show_configured_containers_and_exit(cfg: dict):
     sys.exit(os.EX_OK)
 
 
-def _show_version_and_exit():
+def _show_version_and_exit() -> None:
     _logger.info(f"runo version: {__version__}")
 
     sys.exit(os.EX_OK)
@@ -990,7 +1027,7 @@ def _parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     global _logger
     _logger = Logger()
 
@@ -1020,8 +1057,8 @@ def main():
         rc = _run_command(cmd_name, cmd_options, cfg, containers_requested_via_cli=args.container)
 
     except Exception as ex:
-        _logger.error(f"error happen: {ex}")
-        if args.debug:
+        _logger.error(f"error happened: {ex}")
+        if "args" in dir() and args.debug:
             raise ex
         rc = os.EX_SOFTWARE
 
