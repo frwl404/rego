@@ -1,6 +1,6 @@
 # `runo` Config File Reference
 
-## Table of content
+## Table of contents
 - [Introduction](#introduction)
 - [Commands](#commands)
 - - [Mandatory fields](#mandatory-fields)
@@ -32,7 +32,7 @@ Therefore, `runo` config contains 2 lists of objects:
 
 ## Commands
 
-Configuration of every command consists of several simple  fields.  
+Configuration of every command consists of several simple fields.  
 First, few examples, and then we will discuss details.
 - Simplest case: command config uses only mandatory fields:
 ```toml
@@ -46,7 +46,7 @@ execute = "python3 -m tests.e2e.run"
 [[commands]]
 name = "test"
 description = "runs unit tests"
-before = ["echo This is just an exampe", "echo You should configure your tests here"]
+before = ["echo This is just an example", "echo You should configure your tests here"]
 execute = "pytest"
 after =["echo done > /dev/null"]
 examples = ["tests --cov -vv", "tests --last-failed"]
@@ -114,7 +114,7 @@ the main part. Example:
 Similar to `before`, but executed after the main part. Example:
 - `["rm -f /tmp/unneeded_files*"]`
 
-Please note that these command are executed on host machine (not inside container).
+Please note that these commands are executed on host machine (not inside container).
 
 #### `docker_container` (`string`)
 

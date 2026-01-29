@@ -39,7 +39,7 @@ You immediately see **WHAT** can be done in this repo and **HOW** it can be done
 Now, running build is as simple as:
 ```
 > ./runo build
-Buld is running
+Build is running
 done
 ```
 
@@ -55,7 +55,7 @@ Following containers are available:
   * RockyLinux
 
 > ./runo -c Debian build
-Buld for Debian is running
+Build for Debian is running
 done
 ```
 

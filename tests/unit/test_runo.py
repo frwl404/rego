@@ -83,11 +83,11 @@ class TestArguments:
         [
             (
                 {},
-                "No any valid container configuration found\n",
+                "No valid container configuration found\n",
             ),
             (
                 {"containers": []},
-                "No any valid container configuration found\n",
+                "No valid container configuration found\n",
             ),
             (
                 {
@@ -197,10 +197,10 @@ class TestInit:
 
     INIT_CONTENT = """
 # This is auto-generated file, which contains recommended set of commands and examples.
-# To make it working for you project, please update configuration.
-# For real-word examples, please check https://github.com/frwl404/runo
+# To make it working for your project, please update configuration.
+# For real-world examples, please check https://github.com/frwl404/runo
 # You can find all details, needed for updating it to your needs in:
-# https://github.com/frwl404/runo/blob/main/docs/CONFIG
+# https://github.com/frwl404/runo/blob/main/docs/CONFIG.md
 
 #######################################################
 # Examples of commands
@@ -210,17 +210,17 @@ name = "test"
 description = "runs unit tests"
 # OPTIONALLY, you can specify actions, which you want to perform before the main command.
 # For python projects, you may want to activate venv here.
-before = ["echo This is just an exampe", "echo You should configure your tests here"]
+before = ["echo This is just an example", "echo You should configure your tests here"]
 # Actual command to run (can be single command, or script).
 # You can pass additional options to this executable via console (see 'examples' section)
 execute = "echo ALL TESTS PASSED"
-# OPTIONALLY, you can specify actions, which you want to perfrom after the main command
+# OPTIONALLY, you can specify actions, which you want to perform after the main command
 # to do cleanup
-after =["echo done > /dev/null"]
+after = ["echo done > /dev/null"]
 # OPTIONALLY, you can specify examples of command usage.
 # if missing, ./runo will auto generate single example.
 examples = ["tests --cov -vv", "tests --last-failed"]
-## OPTIONALLY you can specify container, in which command should be executed by defaut.
+## OPTIONALLY you can specify container, in which command should be executed by default.
 ## Container must be defined in the same file.
 ## It can be overwritten, or set from CLI as well.
 # docker_container = "alpine"
@@ -231,7 +231,7 @@ examples = ["tests --cov -vv", "tests --last-failed"]
 [[commands]]
 name = "build"
 description = "builds the project"
-execute = "echo Buld is running"
+execute = "echo Build is running"
 after = ["echo done"]
 #docker_container = "alpine"
 #docker_run_options = "-it -v .:/app -w /app"
@@ -247,7 +247,7 @@ docker_run_options = "-it -v .:/app -w /app"
 name = "pre-commit"
 description = "quick checks/fixes of code formatting (ruff/mypy)"
 execute = "echo Ruff is formatting the code"
-after = ["echo Formating completed"]
+after = ["echo Formatting completed"]
 #execute = "scripts/pre_commit.sh"
 #docker_container = "alpine"
 #docker_run_options = "-v .:/app -w /app"
@@ -330,7 +330,7 @@ docker_image = "alpine:3.14"
         std_out, std_err = capfd.readouterr()
         assert (
             std_err
-            == """file 'runo.py.toml' already exist.
+            == """file 'runo.py.toml' already exists.
 Please review that file. If it is needed, you can either:
 - keep it on the same place, and generate new config under different path/name (use '--config')
 - move it to other place and try to call '--init' again
@@ -436,13 +436,13 @@ class TestConfigCommandsFormat:
                 {},
                 os.EX_OK,
                 "",
-                "Config file is present, but there are no any valid commands configured there\n",
+                "Config file is present, but there aren't any valid commands configured there\n",
             ),
             (
                 {"commands": []},
                 os.EX_OK,
                 "",
-                "Config file is present, but there are no any valid commands configured there\n",
+                "Config file is present, but there aren't any valid commands configured there\n",
             ),
             (
                 {"commands": {}},
@@ -450,7 +450,7 @@ class TestConfigCommandsFormat:
                 """errors detected in configured commands:
   - commands should be represented by list, got dict
 """,
-                "Config file is present, but there are no any valid commands configured there\n",
+                "Config file is present, but there aren't any valid commands configured there\n",
             ),
             (
                 {"commands": "hello"},
@@ -458,7 +458,7 @@ class TestConfigCommandsFormat:
                 """errors detected in configured commands:
   - commands should be represented by list, got str
 """,
-                "Config file is present, but there are no any valid commands configured there\n",
+                "Config file is present, but there aren't any valid commands configured there\n",
             ),
             (
                 {"commands": ["hello"]},
@@ -466,7 +466,7 @@ class TestConfigCommandsFormat:
                 """errors detected in configured commands:
   - commands.0.*: ["must be represented by 'dict', got 'str'"]
 """,
-                "Config file is present, but there are no any valid commands configured there\n",
+                "Config file is present, but there aren't any valid commands configured there\n",
             ),
             (
                 {"commands": [{}]},
@@ -476,7 +476,7 @@ class TestConfigCommandsFormat:
   - commands.0.execute: ['mandatory field missing']
   - commands.0.name: ['mandatory field missing']
 """,
-                "Config file is present, but there are no any valid commands configured there\n",
+                "Config file is present, but there aren't any valid commands configured there\n",
             ),
             (
                 {"commands": [{"name": 13, "wrong_field": "something"}]},
@@ -487,7 +487,7 @@ class TestConfigCommandsFormat:
   - commands.0.name: ['should be of type str, got int']
   - commands.0.wrong_field: ['unsupported field']
 """,
-                "Config file is present, but there are no any valid commands configured there\n",
+                "Config file is present, but there aren't any valid commands configured there\n",
             ),
             (  # Test 'name' field format
                 {
@@ -525,7 +525,7 @@ digits, '-', or '_', got '#not_allowed_also'"]
   - commands.3.name: ["should consist only of letters, \
 digits, '-', or '_', got '?not_allowed_also'"]
 """,
-                "Config file is present, but there are no any valid commands configured there\n",
+                "Config file is present, but there aren't any valid commands configured there\n",
             ),
         ],
     )
@@ -559,7 +559,7 @@ class TestConfigContainersFormat:
             (
                 {"docker_containers": 3},
                 os.EX_CONFIG,
-                "No any valid container configuration found\n",
+                "No valid container configuration found\n",
                 """errors detected in configured containers:
   - docker_containers should be represented by list, got int
 """,
@@ -567,7 +567,7 @@ class TestConfigContainersFormat:
             (
                 {"docker_containers": {}},
                 os.EX_CONFIG,
-                "No any valid container configuration found\n",
+                "No valid container configuration found\n",
                 """errors detected in configured containers:
   - docker_containers should be represented by list, got dict
 """,
@@ -575,7 +575,7 @@ class TestConfigContainersFormat:
             (
                 {"docker_containers": ["should be dict"]},
                 os.EX_CONFIG,
-                "No any valid container configuration found\n",
+                "No valid container configuration found\n",
                 """errors detected in configured containers:
   - docker_containers.0.*: ["must be represented by 'dict', got 'str'"]
 """,
@@ -607,10 +607,10 @@ class TestConfigContainersFormat:
                     ]
                 },
                 os.EX_CONFIG,
-                "No any valid container configuration found\n",
+                "No valid container configuration found\n",
                 """errors detected in configured containers:
   - docker_containers.0.*: ["one of the following fields must be present: \
-['docker_compose_file_path', 'docker_compose_options', 'docker_file_path', 'docker_image']"]
+['docker_compose_file_path', 'docker_file_path', 'docker_image']"]
   - docker_containers.0.name: ['mandatory field missing']
   - docker_containers.1.docker_build_options: ['should be of type str, got int']
   - docker_containers.1.docker_file_path: ['should be of type str, got bool']
@@ -638,8 +638,10 @@ class TestConfigContainersFormat:
                     ]
                 },
                 os.EX_CONFIG,
-                "No any valid container configuration found\n",
+                "No valid container configuration found\n",
                 """errors detected in configured containers:
+  - docker_containers.0.*: ["one of the following fields must be present: \
+['docker_compose_file_path', 'docker_file_path', 'docker_image']"]
   - docker_containers.0.docker_compose_service: ["requires following fields to be present \
 as well, but they are not found: {'docker_compose_file_path'}"]
   - docker_containers.0.name: ['mandatory field missing']
@@ -655,7 +657,7 @@ as well, but they are not found: {'docker_compose_file_path'}"]
                     ]
                 },
                 os.EX_CONFIG,
-                "No any valid container configuration found\n",
+                "No valid container configuration found\n",
                 """errors detected in configured containers:
   - docker_containers.0.docker_compose_file_path: ["requires following fields to be present \
 as well, but they are not found: {'docker_compose_service'}"]
@@ -1230,14 +1232,23 @@ class TestDockerComposeServiceCommands(BaseCommandsTest):
 
         clean_up_commands = [
             (
-                list_to_str(["docker", "compose", "down", "--remove-orphans"]),
-                {"stdout": subprocess.DEVNULL},
+                list_to_str(
+                    [
+                        "docker",
+                        "compose",
+                        "--file",
+                        expected_docker_compose_file,
+                        "down",
+                        "--remove-orphans",
+                    ]
+                ),
+                {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL},
             ),
             (
                 list_to_str(
                     ["docker", "compose", "--file", expected_docker_compose_file, "rm", "-fsv"]
                 ),
-                {"stdout": subprocess.DEVNULL},
+                {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL},
             ),
         ]
 
@@ -1503,7 +1514,7 @@ class TestContainersSelection:
             for c in self.config_content["docker_containers"]
         ]
 
-        with pytest.raises(SystemExit, match="^-1$"), _config_file(
+        with pytest.raises(SystemExit, match=f"^{os.EX_SOFTWARE}$"), _config_file(
             toml.dumps(self.config_content), config_path
         ):
             main()
@@ -1747,3 +1758,49 @@ class TestForwardUser(BaseContainersTest):
         assert all(
             [should_not_be_in_final_options not in str(_call) for _call in patched_run.mock_calls]
         )
+
+
+class TestDebugExceptionHandling:
+    """
+    Test that exceptions are re-raised when debug mode is enabled,
+    allowing developers to see the full traceback.
+    """
+
+    config_content = {
+        "commands": [
+            {
+                "name": "test_cmd",
+                "description": "test command",
+                "execute": "echo test",
+            }
+        ]
+    }
+
+    @patch("runo.subprocess.run")
+    def test_exception_suppressed_without_debug(self, patched_run, capfd, monkeypatch, config_path):
+        """Without -d flag, exceptions are caught and logged, exits with EX_SOFTWARE."""
+        patched_run.side_effect = RuntimeError("simulated error")
+        monkeypatch.setattr(sys, "argv", ["runo", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(SystemExit, match=f"^{os.EX_SOFTWARE}$"), _config_file(
+            toml.dumps(self.config_content), config_path
+        ):
+            main()
+
+        std_out, std_err = capfd.readouterr()
+        assert "error happened: simulated error" in std_err
+
+    @patch("runo.subprocess.run")
+    def test_exception_reraised_with_debug(self, patched_run, capfd, monkeypatch, config_path):
+        """With -d flag, exceptions are re-raised to show full traceback."""
+        patched_run.side_effect = RuntimeError("simulated error for debug")
+        monkeypatch.setattr(sys, "argv", ["runo", "-d", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(RuntimeError, match="simulated error for debug"), _config_file(
+            toml.dumps(self.config_content), config_path
+        ):
+            main()
+
+        std_out, std_err = capfd.readouterr()
+        # Error is still logged before re-raising
+        assert "error happened: simulated error for debug" in std_err
