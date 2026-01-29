@@ -48,7 +48,7 @@ But what if you want to perform build/tests/... for different platforms?
 Not a problem, just ask `runo` to show all available containers and run
 command in any of them as easy as that:
 ```
-> ./runo --containers
+> ./runo -c
 Following containers are available:
   * Debian
   * Centos
