@@ -29,7 +29,7 @@ from typing import (
     Union,
 )
 
-__version__ = "25.10.13-99069d04"
+__version__ = "26.01.29-d1b27d75"
 
 # runo uses .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
@@ -324,7 +324,7 @@ class Image:
 
     def run(self, docker_run_options: List[str], command_to_run: str):
         full_docker_command = (
-            ["docker", "run", "-e", f"RUNO_CONTAINER_NAME={self._cfg['name']}"]
+            ["docker", "run", "--rm", "-e", f"RUNO_CONTAINER_NAME={self._cfg['name']}"]
             + docker_run_options
             + [self._img_tag]
             + [command_to_run]
