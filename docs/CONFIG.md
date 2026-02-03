@@ -10,6 +10,7 @@
 - - [Optional fields](#optional-fields)
 - - - [before](#before-liststring)
 - - - [after](#after-liststring)
+- - - [cleanup](#cleanup-liststring)
 - - - [docker_container](#docker_container-string)
 - - - [docker_run_options](#docker_run_options-string)
 - [Containers](#containers)
@@ -48,7 +49,8 @@ name = "test"
 description = "runs unit tests"
 before = ["echo This is just an example", "echo You should configure your tests here"]
 execute = "pytest"
-after =["echo done > /dev/null"]
+after = ["echo tests completed"]
+cleanup = ["rm -f .coverage"]
 examples = ["tests --cov -vv", "tests --last-failed"]
 docker_container = "alpine"
 docker_run_options = "-it -v .:/app -w /app"
@@ -105,16 +107,26 @@ then resulting command, which will be executed by `runo` will be: `pytest --cov 
 Before executing the main part, you may want to perform some setup 
 (activate `venv` in case of Python project). In this section you can 
 specify list of commands/scripts, which should be executed before 
-the main part. Example:
+the main part. These commands are executed inside the container 
+(or natively if no container is used). Example:
 - `["source /tmp/.venv/bin/activate", "echo Starting tests"]`
 
 
 #### `after` (`list[string]`)
 
-Similar to `before`, but executed after the main part. Example:
-- `["rm -f /tmp/unneeded_files*"]`
+Similar to `before`, but executed after the main part. These commands 
+are executed inside the container (or natively if no container is used), 
+which makes them useful for post-execution actions that need access 
+to the container environment. Example:
+- `["echo tests completed", "echo generating report"]`
 
-Please note that these commands are executed on host machine (not inside container).
+
+#### `cleanup` (`list[string]`)
+
+Cleanup commands to run on the host machine after the container exits 
+(or after native execution completes). Useful for removing temporary files 
+or performing other host-side cleanup. Example:
+- `["rm -f /tmp/unneeded_files*"]`
 
 #### `docker_container` (`string`)
 
