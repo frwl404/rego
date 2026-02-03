@@ -30,7 +30,7 @@ from typing import (
     Union,
 )
 
-__version__ = "26.02.03-9a15aeec"
+__version__ = "26.02.03-1ec55b48"
 
 # runo uses .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
@@ -97,10 +97,10 @@ cleanup = ["echo done > /dev/null"]
 # OPTIONALLY, you can specify examples of command usage.
 # if missing, ./runo will auto generate single example.
 examples = ["tests --cov -vv", "tests --last-failed"]
-## OPTIONALLY you can specify container, in which command should be executed by default.
+## OPTIONALLY you can specify default container, in which command should be executed.
 ## Container must be defined in the same file.
-## It can be overwritten, or set from CLI as well.
-# docker_container = "alpine"
+## It can be overwritten, or set from CLI as well with '-c'/'--container' option.
+# default_docker_container = "alpine"
 ## OPTIONALLY, you can specify 'docker run' options, which should be used at command execution.
 ## See official docker documentation: https://docs.docker.com/reference/cli/docker/container/run/
 # docker_run_options = "-it -v .:/app -w /app"
@@ -110,14 +110,14 @@ name = "build"
 description = "builds the project"
 execute = "echo Build is running"
 cleanup = ["echo done"]
-#docker_container = "alpine"
+#default_docker_container = "alpine"
 #docker_run_options = "-it -v .:/app -w /app"
 
 [[commands]]
 name = "shell"
 description = "debug container by running shell in interactive mode (keep container running)"
 execute = "/bin/sh"
-docker_container = "alpine"
+default_docker_container = "alpine"
 docker_run_options = "-it -v .:/app -w /app"
 
 [[commands]]
@@ -126,7 +126,7 @@ description = "quick checks/fixes of code formatting (ruff/mypy)"
 execute = "echo Ruff is formatting the code"
 cleanup = ["echo Formatting completed"]
 #execute = "scripts/pre_commit.sh"
-#docker_container = "alpine"
+#default_docker_container = "alpine"
 #docker_run_options = "-v .:/app -w /app"
 
 [[commands]]
@@ -134,7 +134,7 @@ name = "update-deps"
 description = "updates dependencies, used in project, to the latest versions"
 execute = "echo Often it is pain, but if you will script it and put here, it will be super easy"
 #execute = "scripts/update-requirements.sh"
-#docker_container = "alpine"
+#default_docker_container = "alpine"
 #docker_run_options = "-v .:/app -w /app"
 
 #######################################################
@@ -636,6 +636,24 @@ def _generate_command_to_run(command_cfg: dict, command_options: List[str]) -> s
     return _generate_bin_sh_cmd(before + [execute] + after)
 
 
+def _get_default_container_from_config(command_cfg: dict) -> Optional[str]:
+    """
+    Get the default container name from command config.
+    Supports both 'default_docker_container' (preferred) and 'docker_container' (deprecated).
+    If 'docker_container' is used, logs a deprecation warning.
+    """
+    if "default_docker_container" in command_cfg:
+        return command_cfg["default_docker_container"]
+    if "docker_container" in command_cfg:
+        _logger.error(
+            "DEPRECATION WARNING: 'docker_container' section in config is deprecated "
+            "and will be removed after 2027-01-01. "
+            "Please rename it to 'default_docker_container'."
+        )
+        return command_cfg["docker_container"]
+    return None
+
+
 def _containers_to_use(
     cfg: dict, command_cfg: dict, containers_requested_via_cli: Optional[List[str]]
 ) -> list:
@@ -649,9 +667,8 @@ def _containers_to_use(
     This function returns resulting list of containers, which should be used
     to handle the given command run.
     """
-    containers_from_command_config = (
-        [command_cfg["docker_container"]] if "docker_container" in command_cfg else []
-    )
+    default_container = _get_default_container_from_config(command_cfg)
+    containers_from_command_config = [default_container] if default_container else []
     containers_to_use = containers_requested_via_cli or containers_from_command_config
 
     if len(containers_to_use) == 1 and containers_to_use[0] == "*":
@@ -797,6 +814,12 @@ class Validator:
             if present_conflicting:
                 field_errors.append(f"conflicting fields found: {present_conflicting}")
 
+            requires_one_of = self._schema[field].get("requires_one_of_fields", set())
+            if requires_one_of and not requires_one_of.intersection(set(data.keys())):
+                field_errors.append(
+                    f"requires one of the following fields to be present: {sorted(requires_one_of)}"
+                )
+
             if field_errors:
                 errors[field].extend(field_errors)
 
@@ -832,14 +855,22 @@ _command_validator = Validator(
         "cleanup": dict(value_type=list, required=False),
         "examples": dict(value_type=list, required=False),
         # Docker section
+        # DEPRECATED: 'docker_container' will be removed on 2027-01-01.
+        # Use 'default_docker_container' instead.
         "docker_container": dict(
             value_type=str,
             required=False,
+            excludes_fields={"default_docker_container"},
+        ),
+        "default_docker_container": dict(
+            value_type=str,
+            required=False,
+            excludes_fields={"docker_container"},
         ),
         "docker_run_options": dict(
             value_type=str,
             required=False,
-            requires_fields={"docker_container"},
+            requires_one_of_fields={"docker_container", "default_docker_container"},
         ),
     }
 )
