@@ -44,7 +44,7 @@ execute = "dev/say.sh"
 [[commands]]
 name = "example_docker_file_single"
 description = "example of command, executing 1 linux command in docker container, defined with docker file"
-docker_container = "container_defined_by_docker_file"
+default_docker_container = "container_defined_by_docker_file"
 docker_run_options = "-it -v .:/app -w /app --user 1000:1000"
 execute = "grep 'PRETTY_NAME' /etc/os-release"
 # e2e_tests = ["example_docker_file_single|PRETTY_NAME=\"Alpine Linux v3.20\"\r\n|0"]
@@ -52,7 +52,7 @@ execute = "grep 'PRETTY_NAME' /etc/os-release"
 [[commands]]
 name = "example_docker_file_multi"
 description = "example of command, executing 2 linux commands in docker container, defined with docker file"
-docker_container = "container_defined_by_docker_file"
+default_docker_container = "container_defined_by_docker_file"
 docker_run_options = "-it -v .:/app -w /app --user 1000:1000"
 before = ["echo Your OS:"]
 execute = "grep 'PRETTY_NAME' /etc/os-release"
@@ -61,7 +61,7 @@ execute = "grep 'PRETTY_NAME' /etc/os-release"
 [[commands]]
 name = "example_docker_file_after"
 description = "example of 'after' running inside docker container (after execute). Shows RUNO_CONTAINER_NAME is set in container but not on host."
-docker_container = "container_defined_by_docker_file"
+default_docker_container = "container_defined_by_docker_file"
 docker_run_options = "-it -v .:/app -w /app --user 1000:1000"
 before = ["echo CONTAINER_NAME_IN_BEFORE: $RUNO_CONTAINER_NAME"]
 execute = "echo CONTAINER_NAME_IN_EXECUTE: $RUNO_CONTAINER_NAME"
@@ -72,17 +72,26 @@ cleanup = ["echo CLEANUP_RUNO_CONTAINER_NAME_IS_EMPTY: ${RUNO_CONTAINER_NAME:-tr
 [[commands]]
 name = "example_docker_file_script"
 description = "example of command, executing script in docker container, defined with docker file"
-docker_container = "container_defined_by_docker_file"
+default_docker_container = "container_defined_by_docker_file"
 docker_run_options = "-it -v .:/app -w /app --user 1000:1000"
 examples = ["example_docker_file_script say_hello"]
 before = ["echo Your OS:", "grep 'PRETTY_NAME' /etc/os-release"]
 execute = "dev/say.sh"
 # e2e_tests = ["example_docker_file_script hello_from_docker|Your OS:\r\nPRETTY_NAME=\"Alpine Linux v3.20\"\r\nyou asked to print 'hello_from_docker'\r\n|0"]
 
+# Test backward compatibility with deprecated 'docker_container' field
+[[commands]]
+name = "example_docker_file_deprecated"
+description = "example using deprecated docker_container field (backward compatibility test)"
+docker_container = "container_defined_by_docker_file"
+docker_run_options = "-it -v .:/app -w /app --user 1000:1000"
+execute = "grep 'PRETTY_NAME' /etc/os-release"
+# e2e_tests = ["example_docker_file_deprecated|PRETTY_NAME=\"Alpine Linux v3.20\"\r\n|0"]
+
 [[commands]]
 name = "example_docker_compose_simple"
 description = "example of command, exicuting simple command from docker compose service"
-docker_container = "container_defined_by_docker_compose"
+default_docker_container = "container_defined_by_docker_compose"
 docker_run_options = "--quiet --build -i"
 execute = "echo PASSED"
 # e2e_tests = ["example_docker_compose_simple|PASSED\n|0"]
@@ -90,7 +99,7 @@ execute = "echo PASSED"
 [[commands]]
 name = "example_docker_compose_test_client"
 description = "example of command, which depends on docker compose service"
-docker_container = "container_defined_by_docker_compose"
+default_docker_container = "container_defined_by_docker_compose"
 docker_run_options = "--quiet --build -i"
 execute = "./dev/client.py"
 # e2e_tests = ["example_docker_compose_test_client|Server is alive\n|0"]

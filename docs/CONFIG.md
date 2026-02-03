@@ -11,7 +11,7 @@
 - - - [before](#before-liststring)
 - - - [after](#after-liststring)
 - - - [cleanup](#cleanup-liststring)
-- - - [docker_container](#docker_container-string)
+- - - [default_docker_container](#default_docker_container-string)
 - - - [docker_run_options](#docker_run_options-string)
 - [Containers](#containers)
 - - [Containers, based on images from repo](#containers-based-on-images-from-repo),
@@ -52,7 +52,7 @@ execute = "pytest"
 after = ["echo tests completed"]
 cleanup = ["rm -f .coverage"]
 examples = ["tests --cov -vv", "tests --last-failed"]
-docker_container = "alpine"
+default_docker_container = "alpine"
 docker_run_options = "-it -v .:/app -w /app"
 ```
 
@@ -128,7 +128,7 @@ Cleanup commands to run on the host machine after the container exits
 or performing other host-side cleanup. Example:
 - `["rm -f /tmp/unneeded_files*"]`
 
-#### `docker_container` (`string`)
+#### `default_docker_container` (`string`)
 
 Name of the container (defined in the same config), which should be used 
 by the command by default. It can be overwritten via CLI at moment of run 

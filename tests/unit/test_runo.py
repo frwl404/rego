@@ -224,10 +224,10 @@ cleanup = ["echo done > /dev/null"]
 # OPTIONALLY, you can specify examples of command usage.
 # if missing, ./runo will auto generate single example.
 examples = ["tests --cov -vv", "tests --last-failed"]
-## OPTIONALLY you can specify container, in which command should be executed by default.
+## OPTIONALLY you can specify default container, in which command should be executed.
 ## Container must be defined in the same file.
-## It can be overwritten, or set from CLI as well.
-# docker_container = "alpine"
+## It can be overwritten, or set from CLI as well with '-c'/'--container' option.
+# default_docker_container = "alpine"
 ## OPTIONALLY, you can specify 'docker run' options, which should be used at command execution.
 ## See official docker documentation: https://docs.docker.com/reference/cli/docker/container/run/
 # docker_run_options = "-it -v .:/app -w /app"
@@ -237,14 +237,14 @@ name = "build"
 description = "builds the project"
 execute = "echo Build is running"
 cleanup = ["echo done"]
-#docker_container = "alpine"
+#default_docker_container = "alpine"
 #docker_run_options = "-it -v .:/app -w /app"
 
 [[commands]]
 name = "shell"
 description = "debug container by running shell in interactive mode (keep container running)"
 execute = "/bin/sh"
-docker_container = "alpine"
+default_docker_container = "alpine"
 docker_run_options = "-it -v .:/app -w /app"
 
 [[commands]]
@@ -253,7 +253,7 @@ description = "quick checks/fixes of code formatting (ruff/mypy)"
 execute = "echo Ruff is formatting the code"
 cleanup = ["echo Formatting completed"]
 #execute = "scripts/pre_commit.sh"
-#docker_container = "alpine"
+#default_docker_container = "alpine"
 #docker_run_options = "-v .:/app -w /app"
 
 [[commands]]
@@ -261,7 +261,7 @@ name = "update-deps"
 description = "updates dependencies, used in project, to the latest versions"
 execute = "echo Often it is pain, but if you will script it and put here, it will be super easy"
 #execute = "scripts/update-requirements.sh"
-#docker_container = "alpine"
+#default_docker_container = "alpine"
 #docker_run_options = "-v .:/app -w /app"
 
 #######################################################
@@ -937,7 +937,7 @@ class TestLocallyBuiltContainerCommands(BaseCommandsTest):
     BASE_COMMAND_CFG: dict = {
         "name": "test_cmd",
         "description": "-",
-        "docker_container": "test_docker_file",
+        "default_docker_container": "test_docker_file",
     }
 
     @pytest.fixture(
@@ -1062,7 +1062,7 @@ class TestLocallyBuiltContainerCommands(BaseCommandsTest):
                 {
                     "name": "test_cmd",
                     "description": "-",
-                    "docker_container": "test_docker_file",
+                    "default_docker_container": "test_docker_file",
                     "execute": "echo OK",
                 }
             ],
@@ -1090,7 +1090,7 @@ class TestContainerFromImageCommands(BaseCommandsTest):
     BASE_COMMAND_CFG: dict = {
         "name": "test_cmd",
         "description": "-",
-        "docker_container": "test_image_from_repo",
+        "default_docker_container": "test_image_from_repo",
     }
 
     @pytest.fixture(
@@ -1142,7 +1142,7 @@ class TestDockerComposeServiceCommands(BaseCommandsTest):
     BASE_COMMAND_CFG: dict = {
         "name": "test_cmd",
         "description": "-",
-        "docker_container": "test_docker_compose",
+        "default_docker_container": "test_docker_compose",
     }
 
     @pytest.fixture(
@@ -1279,7 +1279,7 @@ class TestContainersSelection:
                 "name": "command_with_default_container",
                 "description": "-",
                 "execute": "echo OK",
-                "docker_container": "container1",
+                "default_docker_container": "container1",
             },
         ],
         "docker_containers": [
@@ -1449,7 +1449,7 @@ class TestContainersSelection:
                     "name": "test_cmd",
                     "description": "-",
                     "execute": "echo OK",
-                    "docker_container": "no_such_container",
+                    "default_docker_container": "no_such_container",
                 },
             ],
         }
@@ -1475,7 +1475,7 @@ class TestContainersSelection:
                     "name": "test_cmd",
                     "description": "-",
                     "execute": "echo OK",
-                    "docker_container": "bad_container",
+                    "default_docker_container": "bad_container",
                 },
             ],
             "docker_containers": [
@@ -1573,7 +1573,7 @@ class BaseContainersTest:
                     "name": "test_cmd",
                     "description": "-",
                     "execute": "echo OK",
-                    "docker_container": containers_to_test["name"],
+                    "default_docker_container": containers_to_test["name"],
                     "docker_run_options": docker_run_options,
                 },
             ],
@@ -1834,7 +1834,7 @@ class TestAfterAndCleanupBehavior:
                     "before": ["echo BEFORE"],
                     "execute": "echo EXECUTE",
                     "after": ["echo AFTER"],
-                    "docker_container": "test_container",
+                    "default_docker_container": "test_container",
                     "docker_run_options": "-v .:/app",
                 }
             ],
@@ -1872,7 +1872,7 @@ class TestAfterAndCleanupBehavior:
                     "description": "test command",
                     "execute": "echo EXECUTE",
                     "cleanup": ["echo CLEANUP"],
-                    "docker_container": "test_container",
+                    "default_docker_container": "test_container",
                     "docker_run_options": "-v .:/app",
                 }
             ],
@@ -1912,7 +1912,7 @@ class TestAfterAndCleanupBehavior:
                     "execute": "echo EXECUTE",
                     "after": ["echo AFTER_IN_CONTAINER"],
                     "cleanup": ["echo CLEANUP_ON_HOST"],
-                    "docker_container": "test_container",
+                    "default_docker_container": "test_container",
                     "docker_run_options": "-v .:/app",
                 }
             ],
@@ -1970,3 +1970,183 @@ class TestAfterAndCleanupBehavior:
         assert std_err == ""
         expected_cmd = "/bin/sh -c 'echo BEFORE && echo EXECUTE && echo AFTER'"
         assert expected_cmd in std_out
+
+
+class TestDefaultDockerContainer:
+    """
+    Test the 'default_docker_container' field which replaces the deprecated 'docker_container'.
+    """
+
+    @patch("runo.subprocess.run")
+    def test_default_docker_container_works(self, patched_run, capfd, monkeypatch, config_path):
+        """
+        'default_docker_container' should work the same as 'docker_container'.
+        """
+        patched_run.return_value.returncode = 0
+        config_content = {
+            "commands": [
+                {
+                    "name": "test_cmd",
+                    "description": "test command",
+                    "execute": "echo TEST",
+                    "default_docker_container": "test_container",
+                    "docker_run_options": "-v .:/app",
+                }
+            ],
+            "docker_containers": [
+                {
+                    "name": "test_container",
+                    "docker_image": "alpine:latest",
+                }
+            ],
+        }
+        monkeypatch.setattr(sys, "argv", ["runo", "-d", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(SystemExit, match=_OK_EXIT_CODE_REGEX), _config_file(
+            toml.dumps(config_content), config_path
+        ):
+            main()
+
+        std_out, std_err = capfd.readouterr()
+        # No deprecation warning should be shown
+        assert "DEPRECATION WARNING" not in std_err
+        # Container should be used
+        assert "docker run" in std_out
+        assert "alpine:latest" in std_out
+
+    @patch("runo.subprocess.run")
+    def test_deprecated_docker_container_shows_warning(
+        self, patched_run, capfd, monkeypatch, config_path
+    ):
+        """
+        'docker_container' should still work but show a deprecation warning.
+        """
+        patched_run.return_value.returncode = 0
+        config_content = {
+            "commands": [
+                {
+                    "name": "test_cmd",
+                    "description": "test command",
+                    "execute": "echo TEST",
+                    "docker_container": "test_container",
+                    "docker_run_options": "-v .:/app",
+                }
+            ],
+            "docker_containers": [
+                {
+                    "name": "test_container",
+                    "docker_image": "alpine:latest",
+                }
+            ],
+        }
+        monkeypatch.setattr(sys, "argv", ["runo", "-d", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(SystemExit, match=_OK_EXIT_CODE_REGEX), _config_file(
+            toml.dumps(config_content), config_path
+        ):
+            main()
+
+        std_out, std_err = capfd.readouterr()
+        # Deprecation warning should be shown with exact text
+        expected_warning = (
+            "DEPRECATION WARNING: 'docker_container' section in config is deprecated "
+            "and will be removed after 2027-01-01. "
+            "Please rename it to 'default_docker_container'.\n"
+        )
+        assert std_err == expected_warning
+        # Container should still be used
+        assert "docker run" in std_out
+        assert "alpine:latest" in std_out
+
+    def test_both_fields_conflict(self, capfd, monkeypatch, config_path):
+        """
+        Using both 'docker_container' and 'default_docker_container' should fail validation.
+        """
+        config_content = {
+            "commands": [
+                {
+                    "name": "test_cmd",
+                    "description": "test command",
+                    "execute": "echo TEST",
+                    "docker_container": "container1",
+                    "default_docker_container": "container2",
+                }
+            ],
+            "docker_containers": [
+                {"name": "container1", "docker_image": "alpine:latest"},
+                {"name": "container2", "docker_image": "alpine:latest"},
+            ],
+        }
+        monkeypatch.setattr(sys, "argv", ["runo", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(SystemExit) as exc_info, _config_file(
+            toml.dumps(config_content), config_path
+        ):
+            main()
+
+        assert exc_info.value.code == os.EX_CONFIG
+        std_out, std_err = capfd.readouterr()
+        assert "conflicting fields found" in std_err
+
+    @patch("runo.subprocess.run")
+    def test_docker_run_options_works_with_default_docker_container(
+        self, patched_run, capfd, monkeypatch, config_path
+    ):
+        """
+        'docker_run_options' should work correctly with 'default_docker_container'.
+        """
+        patched_run.return_value.returncode = 0
+        config_content = {
+            "commands": [
+                {
+                    "name": "test_cmd",
+                    "description": "test command",
+                    "execute": "echo TEST",
+                    "default_docker_container": "test_container",
+                    "docker_run_options": "-v .:/app -w /app",
+                }
+            ],
+            "docker_containers": [
+                {
+                    "name": "test_container",
+                    "docker_image": "alpine:latest",
+                }
+            ],
+        }
+        monkeypatch.setattr(sys, "argv", ["runo", "-d", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(SystemExit, match=_OK_EXIT_CODE_REGEX), _config_file(
+            toml.dumps(config_content), config_path
+        ):
+            main()
+
+        std_out, std_err = capfd.readouterr()
+        assert std_err == ""
+        assert "-v .:/app" in std_out
+        assert "-w /app" in std_out
+
+    def test_docker_run_options_requires_container_field(self, capfd, monkeypatch, config_path):
+        """
+        'docker_run_options' should fail if neither 'docker_container' nor
+        'default_docker_container' is present.
+        """
+        config_content = {
+            "commands": [
+                {
+                    "name": "test_cmd",
+                    "description": "test command",
+                    "execute": "echo TEST",
+                    "docker_run_options": "-v .:/app",
+                }
+            ],
+        }
+        monkeypatch.setattr(sys, "argv", ["runo", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(SystemExit) as exc_info, _config_file(
+            toml.dumps(config_content), config_path
+        ):
+            main()
+
+        assert exc_info.value.code == os.EX_CONFIG
+        std_out, std_err = capfd.readouterr()
+        assert "requires one of the following fields" in std_err
