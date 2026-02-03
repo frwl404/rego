@@ -15,8 +15,23 @@ name = "example_native_multi"
 description = "example of command, executing 2 linux commands natively on your OS"
 before = ["echo BE", "echo FOR"]
 execute = "echo PASSED"
-after = ["echo AFTER"]
-# e2e_tests = ["example_native_multi|BE\nFOR\nPASSED\nAFTER\n|0"]
+after = ["echo AFTER_IN_CMD"]
+cleanup = ["echo CLEANUP"]
+# e2e_tests = ["example_native_multi|BE\nFOR\nPASSED\nAFTER_IN_CMD\nCLEANUP\n|0"]
+
+[[commands]]
+name = "example_native_after_only"
+description = "example of command with only 'after' (runs in same shell as execute)"
+execute = "echo MAIN"
+after = ["echo POST_EXECUTE"]
+# e2e_tests = ["example_native_after_only|MAIN\nPOST_EXECUTE\n|0"]
+
+[[commands]]
+name = "example_native_cleanup_only"
+description = "example of command with only 'cleanup' (runs on host after main command)"
+execute = "echo MAIN"
+cleanup = ["echo HOST_CLEANUP"]
+# e2e_tests = ["example_native_cleanup_only|MAIN\nHOST_CLEANUP\n|0"]
 
 [[commands]]
 name = "example_native_script"
@@ -42,6 +57,17 @@ docker_run_options = "-it -v .:/app -w /app --user 1000:1000"
 before = ["echo Your OS:"]
 execute = "grep 'PRETTY_NAME' /etc/os-release"
 # e2e_tests = ["example_docker_file_multi|Your OS:\r\nPRETTY_NAME=\"Alpine Linux v3.20\"\r\n|0"]
+
+[[commands]]
+name = "example_docker_file_after"
+description = "example of 'after' running inside docker container (after execute). Shows RUNO_CONTAINER_NAME is set in container but not on host."
+docker_container = "container_defined_by_docker_file"
+docker_run_options = "-it -v .:/app -w /app --user 1000:1000"
+before = ["echo CONTAINER_NAME_IN_BEFORE: $RUNO_CONTAINER_NAME"]
+execute = "echo CONTAINER_NAME_IN_EXECUTE: $RUNO_CONTAINER_NAME"
+after = ["echo CONTAINER_NAME_IN_AFTER: $RUNO_CONTAINER_NAME"]
+cleanup = ["echo CLEANUP_RUNO_CONTAINER_NAME_IS_EMPTY: ${RUNO_CONTAINER_NAME:-true}"]
+# e2e_tests = ["example_docker_file_after|CONTAINER_NAME_IN_BEFORE: container_defined_by_docker_file\r\nCONTAINER_NAME_IN_EXECUTE: container_defined_by_docker_file\r\nCONTAINER_NAME_IN_AFTER: container_defined_by_docker_file\r\nCLEANUP_RUNO_CONTAINER_NAME_IS_EMPTY: true\n|0"]
 
 [[commands]]
 name = "example_docker_file_script"

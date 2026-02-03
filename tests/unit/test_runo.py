@@ -210,13 +210,17 @@ name = "test"
 description = "runs unit tests"
 # OPTIONALLY, you can specify actions, which you want to perform before the main command.
 # For python projects, you may want to activate venv here.
+# These commands are executed inside the container (or natively if no container is used).
 before = ["echo This is just an example", "echo You should configure your tests here"]
 # Actual command to run (can be single command, or script).
 # You can pass additional options to this executable via console (see 'examples' section)
 execute = "echo ALL TESTS PASSED"
-# OPTIONALLY, you can specify actions, which you want to perform after the main command
-# to do cleanup
-after = ["echo done > /dev/null"]
+# OPTIONALLY, you can specify actions to perform after the main command, but still inside
+# the container. Useful for generating coverage reports or other post-test actions.
+after = ["echo generating coverage report"]
+# OPTIONALLY, you can specify cleanup actions to perform on the host machine after
+# the container exits. Useful for removing temporary files.
+cleanup = ["echo done > /dev/null"]
 # OPTIONALLY, you can specify examples of command usage.
 # if missing, ./runo will auto generate single example.
 examples = ["tests --cov -vv", "tests --last-failed"]
@@ -232,7 +236,7 @@ examples = ["tests --cov -vv", "tests --last-failed"]
 name = "build"
 description = "builds the project"
 execute = "echo Build is running"
-after = ["echo done"]
+cleanup = ["echo done"]
 #docker_container = "alpine"
 #docker_run_options = "-it -v .:/app -w /app"
 
@@ -247,7 +251,7 @@ docker_run_options = "-it -v .:/app -w /app"
 name = "pre-commit"
 description = "quick checks/fixes of code formatting (ruff/mypy)"
 execute = "echo Ruff is formatting the code"
-after = ["echo Formatting completed"]
+cleanup = ["echo Formatting completed"]
 #execute = "scripts/pre_commit.sh"
 #docker_container = "alpine"
 #docker_run_options = "-v .:/app -w /app"
@@ -714,11 +718,12 @@ class BaseCommandsTest:
     COMMON_COMMANDS_TEMPLATES = [
         # Simple command
         {"execute": "echo PASSED"},
-        # before/after
+        # before/after (in-container) and cleanup (on-host)
         {
             "before": ["echo BEFORE", "echo TEST"],
             "execute": "echo PASSED",
-            "after": ["echo done"],
+            "after": ["echo AFTER_IN_CONTAINER"],
+            "cleanup": ["echo done"],
         },
     ]
 
@@ -748,13 +753,15 @@ class BaseCommandsTest:
 
         execute = " ".join([command_cfg["execute"]] + command_options)
 
-        return f"/bin/sh -c '{' && '.join(before + [execute])}'"
+        after = command_cfg.get("after", [])
+
+        return f"/bin/sh -c '{' && '.join(before + [execute] + after)}'"
 
     @staticmethod
     def _generate_configured_cleanup(command_cfg: dict):
-        after = command_cfg.get("after")
-        if after:
-            return f"/bin/sh -c '{' && '.join(after)}'"
+        cleanup = command_cfg.get("cleanup")
+        if cleanup:
+            return f"/bin/sh -c '{' && '.join(cleanup)}'"
         return ""
 
     @staticmethod
@@ -1804,3 +1811,162 @@ class TestDebugExceptionHandling:
         std_out, std_err = capfd.readouterr()
         # Error is still logged before re-raising
         assert "error happened: simulated error for debug" in std_err
+
+
+class TestAfterAndCleanupBehavior:
+    """
+    Test that 'after' commands run inside the container (part of the main command)
+    and 'cleanup' commands run on the host (separate subprocess call).
+    """
+
+    @patch("runo.subprocess.run")
+    def test_after_runs_inside_container(self, patched_run, capfd, monkeypatch, config_path):
+        """
+        'after' commands should be part of the /bin/sh -c command that runs in container,
+        executed after the main 'execute' command.
+        """
+        patched_run.return_value.returncode = 0
+        config_content = {
+            "commands": [
+                {
+                    "name": "test_cmd",
+                    "description": "test command",
+                    "before": ["echo BEFORE"],
+                    "execute": "echo EXECUTE",
+                    "after": ["echo AFTER"],
+                    "docker_container": "test_container",
+                    "docker_run_options": "-v .:/app",
+                }
+            ],
+            "docker_containers": [
+                {
+                    "name": "test_container",
+                    "docker_image": "alpine:latest",
+                }
+            ],
+        }
+        monkeypatch.setattr(sys, "argv", ["runo", "-d", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(SystemExit, match=_OK_EXIT_CODE_REGEX), _config_file(
+            toml.dumps(config_content), config_path
+        ):
+            main()
+
+        std_out, std_err = capfd.readouterr()
+        assert std_err == ""
+        # The 'after' command should be part of the single /bin/sh -c command
+        expected_cmd = "/bin/sh -c 'echo BEFORE && echo EXECUTE && echo AFTER'"
+        assert expected_cmd in std_out
+
+    @patch("runo.subprocess.run")
+    def test_cleanup_runs_on_host(self, patched_run, capfd, monkeypatch, config_path):
+        """
+        'cleanup' commands should run as a separate subprocess call on the host,
+        after the container command completes.
+        """
+        patched_run.return_value.returncode = 0
+        config_content = {
+            "commands": [
+                {
+                    "name": "test_cmd",
+                    "description": "test command",
+                    "execute": "echo EXECUTE",
+                    "cleanup": ["echo CLEANUP"],
+                    "docker_container": "test_container",
+                    "docker_run_options": "-v .:/app",
+                }
+            ],
+            "docker_containers": [
+                {
+                    "name": "test_container",
+                    "docker_image": "alpine:latest",
+                }
+            ],
+        }
+        monkeypatch.setattr(sys, "argv", ["runo", "-d", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(SystemExit, match=_OK_EXIT_CODE_REGEX), _config_file(
+            toml.dumps(config_content), config_path
+        ):
+            main()
+
+        std_out, std_err = capfd.readouterr()
+        assert std_err == ""
+        # The cleanup command should be a separate call, not part of the container command
+        assert "/bin/sh -c 'echo CLEANUP'" in std_out
+        # And it should NOT be part of the main docker command
+        assert "echo EXECUTE && echo CLEANUP" not in std_out
+
+    @patch("runo.subprocess.run")
+    def test_after_and_cleanup_together(self, patched_run, capfd, monkeypatch, config_path):
+        """
+        Test that both 'after' (in-container) and 'cleanup' (on-host) work together correctly.
+        """
+        patched_run.return_value.returncode = 0
+        config_content = {
+            "commands": [
+                {
+                    "name": "test_cmd",
+                    "description": "test command",
+                    "before": ["echo BEFORE"],
+                    "execute": "echo EXECUTE",
+                    "after": ["echo AFTER_IN_CONTAINER"],
+                    "cleanup": ["echo CLEANUP_ON_HOST"],
+                    "docker_container": "test_container",
+                    "docker_run_options": "-v .:/app",
+                }
+            ],
+            "docker_containers": [
+                {
+                    "name": "test_container",
+                    "docker_image": "alpine:latest",
+                }
+            ],
+        }
+        monkeypatch.setattr(sys, "argv", ["runo", "-d", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(SystemExit, match=_OK_EXIT_CODE_REGEX), _config_file(
+            toml.dumps(config_content), config_path
+        ):
+            main()
+
+        std_out, std_err = capfd.readouterr()
+        assert std_err == ""
+        # 'after' should be in the container command
+        expected_container_cmd = (
+            "/bin/sh -c 'echo BEFORE && echo EXECUTE && echo AFTER_IN_CONTAINER'"
+        )
+        assert expected_container_cmd in std_out
+        # 'cleanup' should be a separate host command
+        assert "/bin/sh -c 'echo CLEANUP_ON_HOST'" in std_out
+
+    @patch("runo.subprocess.run")
+    def test_after_runs_natively_without_container(
+        self, patched_run, capfd, monkeypatch, config_path
+    ):
+        """
+        When no container is used, 'after' should still be part of the main command.
+        """
+        patched_run.return_value.returncode = 0
+        config_content = {
+            "commands": [
+                {
+                    "name": "test_cmd",
+                    "description": "test command",
+                    "before": ["echo BEFORE"],
+                    "execute": "echo EXECUTE",
+                    "after": ["echo AFTER"],
+                }
+            ],
+        }
+        monkeypatch.setattr(sys, "argv", ["runo", "-d", "--config", str(config_path), "test_cmd"])
+
+        with pytest.raises(SystemExit, match=_OK_EXIT_CODE_REGEX), _config_file(
+            toml.dumps(config_content), config_path
+        ):
+            main()
+
+        std_out, std_err = capfd.readouterr()
+        assert std_err == ""
+        expected_cmd = "/bin/sh -c 'echo BEFORE && echo EXECUTE && echo AFTER'"
+        assert expected_cmd in std_out

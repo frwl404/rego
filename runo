@@ -30,7 +30,7 @@ from typing import (
     Union,
 )
 
-__version__ = "26.01.29-716a0e17"
+__version__ = "26.02.03-9a15aeec"
 
 # runo uses .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
@@ -83,13 +83,17 @@ name = "test"
 description = "runs unit tests"
 # OPTIONALLY, you can specify actions, which you want to perform before the main command.
 # For python projects, you may want to activate venv here.
+# These commands are executed inside the container (or natively if no container is used).
 before = ["echo This is just an example", "echo You should configure your tests here"]
 # Actual command to run (can be single command, or script).
 # You can pass additional options to this executable via console (see 'examples' section)
 execute = "echo ALL TESTS PASSED"
-# OPTIONALLY, you can specify actions, which you want to perform after the main command
-# to do cleanup
-after = ["echo done > /dev/null"]
+# OPTIONALLY, you can specify actions to perform after the main command, but still inside
+# the container. Useful for generating coverage reports or other post-test actions.
+after = ["echo generating coverage report"]
+# OPTIONALLY, you can specify cleanup actions to perform on the host machine after
+# the container exits. Useful for removing temporary files.
+cleanup = ["echo done > /dev/null"]
 # OPTIONALLY, you can specify examples of command usage.
 # if missing, ./runo will auto generate single example.
 examples = ["tests --cov -vv", "tests --last-failed"]
@@ -105,7 +109,7 @@ examples = ["tests --cov -vv", "tests --last-failed"]
 name = "build"
 description = "builds the project"
 execute = "echo Build is running"
-after = ["echo done"]
+cleanup = ["echo done"]
 #docker_container = "alpine"
 #docker_run_options = "-it -v .:/app -w /app"
 
@@ -120,7 +124,7 @@ docker_run_options = "-it -v .:/app -w /app"
 name = "pre-commit"
 description = "quick checks/fixes of code formatting (ruff/mypy)"
 execute = "echo Ruff is formatting the code"
-after = ["echo Formatting completed"]
+cleanup = ["echo Formatting completed"]
 #execute = "scripts/pre_commit.sh"
 #docker_container = "alpine"
 #docker_run_options = "-v .:/app -w /app"
@@ -627,7 +631,9 @@ def _generate_command_to_run(command_cfg: dict, command_options: List[str]) -> s
 
     execute = " ".join([command_cfg["execute"]] + command_options)
 
-    return _generate_bin_sh_cmd(before + [execute])
+    after = command_cfg.get("after", [])
+
+    return _generate_bin_sh_cmd(before + [execute] + after)
 
 
 def _containers_to_use(
@@ -656,9 +662,9 @@ def _containers_to_use(
 
 
 def _generate_cleanup_cmd(command_cfg: dict) -> Optional[str]:
-    after = command_cfg.get("after")
-    if after:
-        return _generate_bin_sh_cmd(after)
+    cleanup = command_cfg.get("cleanup")
+    if cleanup:
+        return _generate_bin_sh_cmd(cleanup)
     return None
 
 
@@ -823,6 +829,7 @@ _command_validator = Validator(
         "before": dict(value_type=list, required=False),
         "execute": dict(value_type=str, required=True),
         "after": dict(value_type=list, required=False),
+        "cleanup": dict(value_type=list, required=False),
         "examples": dict(value_type=list, required=False),
         # Docker section
         "docker_container": dict(
