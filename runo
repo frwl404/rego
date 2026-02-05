@@ -30,7 +30,7 @@ from typing import (
     Union,
 )
 
-__version__ = "26.02.03-1ec55b48"
+__version__ = "26.02.05-1ec55b48"
 
 # runo uses .toml format of config files, but parsers for this format
 # might be not available in old python versions (only in 3.11 tomllib
